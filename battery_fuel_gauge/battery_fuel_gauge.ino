@@ -10,6 +10,7 @@
  *   After exiting sleep mode or resetting, give the MAX17043/4 
  *   half a second to perform the first measurements
  */
+// Hi I am zixin 
 
 #include <Wire.h>
 #include <LiFuelGauge.h>
