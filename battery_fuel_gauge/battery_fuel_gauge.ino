@@ -1,4 +1,5 @@
 /**
+ * Need to include this library: https://github.com/adafruit/Adafruit-GFX-Library
  * This is an example demonstrating the use of the LiFuelGauge library
  * The example prints battery status information on the serial monitor
  * When an Alert Threshold interrupt is generated, the lowPower ISR is
