@@ -7,10 +7,8 @@ signal line to arduino digital pin 2.
  
  */
 
-//byte statusLed    = 13;
-
-byte sensorInterrupt = 26;  // 0 = digital pin 2
-byte sensorPin       = 27;
+byte sensorInterrupt = 4;
+byte sensorPin       = 2;
 
 // The hall-effect flow sensor outputs approximately 4.5 pulses per second per
 // litre/minute of flow.
