@@ -6,8 +6,8 @@
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID                    BLEUUID((uint16_t)0x180F)
-#define BATTERY_CHARACTERISTIC_UUID     BLEUUID((uint16_t)0x2A19)
+#define SERVICE_UUID                    "44d55770-bd07-4ce7-8ff9-c564c9c9b24a"
+#define BATTERY_CHARACTERISTIC_UUID     "62391be9-a26b-4a82-8a13-e4db229df11e"
 #define SPEED_CHARACTERISTIC_UUID       "a56f6a0e-164d-4d7c-b4cd-74afbdfeaf1f"
 
 
