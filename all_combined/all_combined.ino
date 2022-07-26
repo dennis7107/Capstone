@@ -22,6 +22,7 @@ const int GAUGE_POWER                           = 5;
 const long GAUGE_INTERVAL                       = 10000;
 float batteryVoltage                            = 0;
 unsigned long gaugeOldTime                      = 0;
+int SOC                                         = 0;
 
 //upload data
 const unsigned long UPLOAD_INTERVAL             = 500;
@@ -80,17 +81,20 @@ void loop() {
     batteryVoltage = gauge.readVoltage();
     gaugeMeasure = false;
     digitalWrite(RELAY_PIN, LOW);
-    //Serial.println("reading");
+    
     }
   }
 
   if (dataUpload == true)
   {
+    getStateOfCharge();
     Serial.print("Flow rate: ");
     Serial.print(flowRate);
     Serial.print("\tml per sec\tBattery voltage: ");
     Serial.print(batteryVoltage);
-    Serial.println("\tmV\t");
+    Serial.print("\tmV\tSOC: ");
+    Serial.print(SOC);
+    Serial.println("\t%");
 
 //    Serial.print("gaugeOldTime: ");
 //    Serial.print((millis() - gaugeOldTime));
@@ -114,4 +118,24 @@ void flowSensorUpdate()
   flowRate = ((1000.0 / (millis() - sensorOldTime)) * pulseCount) / FLOWSENSOR_CALIBRATION;
   pulseCount = 0;
   attachInterrupt(digitalPinToInterrupt(FLOWSENSOR_INT), pulseCounter, FALLING);
+}
+
+void getStateOfCharge()
+{
+  if (batteryVoltage>12.4) {
+    SOC = 100;
+  }
+  else if (batteryVoltage>=11.2) {
+    SOC = 100 - 25*(12.4-batteryVoltage);
+  } 
+  else if (batteryVoltage>=11.0) {
+    SOC = 70 - 250*(11.2-batteryVoltage);
+  }
+  else if (batteryVoltage>=10.0) {
+    SOC = 20 - 20*(11-batteryVoltage);
+  }
+  else {
+    SOC = 0;
+  }
+  //Serial.println("reading battery soc");
 }

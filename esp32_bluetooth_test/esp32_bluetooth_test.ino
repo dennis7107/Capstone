@@ -18,7 +18,9 @@ BLEDescriptor pDescriptor(BLEUUID((uint16_t)0x2901));
 BLEDescriptor pDescriptor2(BLEUUID((uint16_t)0x2901));
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-uint32_t value = 0;
+uint16_t value = 88;
+float value2 = 10.52f;
+
 
 
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -47,7 +49,7 @@ void setup() {
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
                                        );
-  pCharacteristic->setValue("100");
+  pCharacteristic->setValue(value);
   pDescriptor.setValue("Bike battery level");
   pCharacteristic->addDescriptor(&pDescriptor);
   pCharacteristic->addDescriptor(new BLE2902());
@@ -57,7 +59,7 @@ void setup() {
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
                                        );
-  pCharacteristic2->setValue("0");
+  pCharacteristic2->setValue(value2);
   pDescriptor2.setValue("Water flow sensor reading");
   pCharacteristic2->addDescriptor(&pDescriptor2);
 //  pCharacteristic2->addDescriptor(new BLE2902());
@@ -72,6 +74,10 @@ void setup() {
   BLEDevice::startAdvertising();
   pAdvertising->start();
   Serial.println("Waiting a client connection to notify...");
+  Serial.print("SERVICE_UUID: ");
+  Serial.print(SERVICE_UUID);
+  Serial.print("    BATTERY_CHARACTERISTIC_UUID:  ");
+  Serial.println(BATTERY_CHARACTERISTIC_UUID);
 }
 
 void loop() {
@@ -79,10 +85,12 @@ void loop() {
     if (deviceConnected) {
         pCharacteristic->setValue(value);
         pCharacteristic->notify();
-        value++;
-        if (value == 101) {
-          value = 0;
-        }
+        pCharacteristic2->notify();
+//        value++;
+//        if (value == 101) {
+//          value = 0;
+//        }
+        Serial.println("connected");
         delay(100); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
     }
     // disconnecting

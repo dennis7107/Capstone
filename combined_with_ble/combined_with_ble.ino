@@ -5,34 +5,34 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#define SERVICE_UUID                  "c65187d5-ca14-45e8-b03c-e97a055b4e2b"
-#define BATTERY_CHARACTERISTIC_UUID   "e0dab588-5100-457e-a73d-53603d0c4d3f"
+#define SERVICE_UUID                  "44d55770-bd07-4ce7-8ff9-c564c9c9b24a"
+#define BATTERY_CHARACTERISTIC_UUID   "62391be9-a26b-4a82-8a13-e4db229df11e"
 #define SPEED_CHARACTERISTIC_UUID     "a56f6a0e-164d-4d7c-b4cd-74afbdfeaf1f"
 
 //flow sensor
-const int FLOWSENSOR_INT                        = 4;
-const int FLOWSENSOR_POWER                      = 2;
+const int FLOWSENSOR_INT                        = 2;
+const int FLOWSENSOR_POWER                      = 4;
 const float FLOWSENSOR_CALIBRATION              = 4.5;
 volatile byte pulseCount                        = 0;
-float flowRate                                  = 0;
-unsigned int flowMilliLitres                    = 0;
+float flowRate                                  = 0;            // in L/min
+int bikeSpeed                                   = 0;            // cm/s
 unsigned long sensorOldTime                     = 0;
 
 //solid-state relay
 const int RELAY_PIN                             = 25;
 const long RELAY_PRE_ON                         = 2000;
 unsigned long relayOldTime                      = 0;
-int FAKE_SOURCE                                 = 15;
 
 //battery fuel gauge ic
 DFRobot_MAX17043 gauge;
 const int GAUGE_POWER                           = 5;
 const long GAUGE_INTERVAL                       = 10000;
-float batteryVoltage                            = 0;
+float batteryVoltage                            = 10;
 unsigned long gaugeOldTime                      = 0;
+int SOC                                         = 0;
 
 //upload data
-const unsigned long UPLOAD_INTERVAL             = 2000;
+const unsigned long UPLOAD_INTERVAL             = 1000;
 unsigned long uploadOldTime                     = 0;
 bool gaugeMeasure = false;
 bool dataUpload = false;
@@ -69,8 +69,6 @@ void setup() {
 
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
-  pinMode(FAKE_SOURCE, OUTPUT);
-  digitalWrite(FAKE_SOURCE, HIGH);
 
   pinMode(GAUGE_POWER, OUTPUT);
   digitalWrite(GAUGE_POWER, HIGH);
@@ -92,7 +90,7 @@ void setup() {
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
                                        );
-  pCharacteristic->setValue("100");
+  pCharacteristic->setValue(SOC);
   pDescriptor.setValue("Bike battery level");
   pCharacteristic->addDescriptor(&pDescriptor);
 
@@ -101,7 +99,7 @@ void setup() {
                                          BLECharacteristic::PROPERTY_READ |
                                          BLECharacteristic::PROPERTY_WRITE
                                        );
-  pCharacteristic2->setValue("0");
+  pCharacteristic2->setValue(flowRate);
   pDescriptor2.setValue("Water flow sensor reading");
   pCharacteristic2->addDescriptor(&pDescriptor2);
 
@@ -128,7 +126,6 @@ void loop() {
     digitalWrite(RELAY_PIN, HIGH);
     relayOldTime = millis();
     gaugeOldTime = millis();
-    //Serial.println("gauge on");
   }
   if ((millis() - uploadOldTime) > UPLOAD_INTERVAL)
   {
@@ -141,21 +138,20 @@ void loop() {
     if ((millis() - relayOldTime) > RELAY_PRE_ON)
     {
     batteryVoltage = gauge.readVoltage();
+    batteryVoltage = (float)batteryVoltage/3750*12.00;
     gaugeMeasure = false;
     digitalWrite(RELAY_PIN, LOW);
-    //Serial.println("reading");
     }
   }
 
   if (deviceConnected) {
         if (dataUpload == true) {
-          pCharacteristic->setValue(value);
+          getStateOfCharge();
+          pCharacteristic->setValue(SOC);
           pCharacteristic->notify();
-          value++;
-          if (value == 101) {
-            value = 0;
-          }
-          Serial.println(value);
+          pCharacteristic2->setValue(bikeSpeed);
+          pCharacteristic2->notify();
+          Serial.println(bikeSpeed);
           dataUpload = false;
         }      
   }
@@ -186,6 +182,27 @@ void flowSensorUpdate()
 {
   detachInterrupt(digitalPinToInterrupt(FLOWSENSOR_INT));
   flowRate = ((1000.0 / (millis() - sensorOldTime)) * pulseCount) / FLOWSENSOR_CALIBRATION;
+  bikeSpeed = flowRate * 1000 / 60 / 0.9503;
   pulseCount = 0;
   attachInterrupt(digitalPinToInterrupt(FLOWSENSOR_INT), pulseCounter, FALLING);
+}
+
+void getStateOfCharge()
+{
+  if (batteryVoltage>12.4) {
+    SOC = 100;
+  }
+  else if (batteryVoltage>=11.2) {
+    SOC = 100 - 25*(12.40-batteryVoltage);
+  } 
+  else if (batteryVoltage>=11.0) {
+    SOC = 70 - 250*(11.20-batteryVoltage);
+  }
+  else if (batteryVoltage>=10.0) {
+    SOC = 20 - 20*(11.00-batteryVoltage);
+  }
+  else {
+    SOC = 0;
+  }
+  //Serial.println("reading battery soc");
 }
